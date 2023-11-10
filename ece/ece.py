@@ -57,9 +57,8 @@ def parse_databases():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--destroy", "--cleanup", action="store_true")
-    parser.add_argument("--skip-config", action="store_true")
-    parser.add_argument("--login-hint", action="store_true")
+    parser.add_argument("--destroy", "--cleanup", action="store_true", help="delete all resources")
+    parser.add_argument("--login-hint", action="store_true", help="print copy-paste login command")
     args = parser.parse_args()
 
     if "TF_VAR_do_token" not in os.environ:
