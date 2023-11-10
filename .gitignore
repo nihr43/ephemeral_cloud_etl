@@ -1,0 +1,5 @@
+resources/providers
+resources/*.zip
+resources/diagnoses.csv
+resources/patients.csv
+resources/providers.csv
