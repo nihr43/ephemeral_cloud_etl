@@ -1,0 +1,12 @@
+etl:
+  outputs:
+    dev:
+      dbname: {{database.database}}
+      host: {{database.host}}
+      pass: {{database.password}}
+      port: {{database.port}}
+      schema: public
+      threads: 10
+      type: postgres
+      user: {{database.user}}
+  target: dev

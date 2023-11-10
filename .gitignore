@@ -5,3 +5,4 @@ resources/patients.csv
 resources/providers.csv
 terraform.tfstate
 .terraform*
+etl/profiles.yml

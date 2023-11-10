@@ -2,6 +2,7 @@ import argparse
 import subprocess
 import os
 import json
+from jinja2 import Environment, FileSystemLoader
 
 
 def run_cmd(cmd):
@@ -35,6 +36,7 @@ class Database:
                 self.password, self.host, self.port, self.user, self.database
             )
         )
+        print("\nOr run dbt with:\ndbt build --project-dir etl --profiles-dir etl")
 
 
 def parse_databases():
@@ -57,8 +59,12 @@ def parse_databases():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--destroy", "--cleanup", action="store_true", help="delete all resources")
-    parser.add_argument("--login-hint", action="store_true", help="print copy-paste login command")
+    parser.add_argument(
+        "--destroy", "--cleanup", action="store_true", help="delete all resources"
+    )
+    parser.add_argument(
+        "--login-hint", action="store_true", help="print copy-paste login command"
+    )
     args = parser.parse_args()
 
     if "TF_VAR_do_token" not in os.environ:
@@ -75,3 +81,11 @@ def main():
     if args.login_hint:
         for i in databases:
             i.get_login_hint()
+
+    env = Environment(loader=FileSystemLoader("templates"))
+    template = env.get_template("profiles.yml.j2")
+    with open("etl/profiles.yml", "w") as profile:
+        profile.truncate()
+        profile.write(
+            template.render(database=databases[0])
+        )  # todo: handle more than one?
