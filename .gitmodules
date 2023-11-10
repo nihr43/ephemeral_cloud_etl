@@ -1,0 +1,3 @@
+[submodule "resources/ICD-10-CSV"]
+	path = resources/ICD-10-CSV
+	url = https://github.com/k4m1113/ICD-10-CSV.git
