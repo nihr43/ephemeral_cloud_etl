@@ -2,8 +2,9 @@ import argparse
 import subprocess
 import os
 import json
+from time import sleep
 from jinja2 import Environment, FileSystemLoader
-from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy import create_engine, MetaData, exc
 
 
 def run_cmd(cmd):
@@ -47,6 +48,29 @@ class Database:
 
         print("\nOr run dbt with:\ndbt build --project-dir etl --profiles-dir etl")
 
+    def wait_ready(self):
+        """
+        immediately after a database is created, it can take a minute to be reachable over the internet
+        """
+        psql = "postgresql://{}:{}@{}:{}/{}".format(
+            self.user, self.password, self.host, self.port, self.database
+        )
+        engine = create_engine(psql)
+        i = 0
+        while i < 60:
+            try:
+                metadata = MetaData()
+                metadata.reflect(bind=engine)
+            except:
+                print("waiting for {} to become ready".format(self.host))
+                sleep(10)
+                i += 1
+            else:
+                print("{} ready".format(self.host))
+                break
+            finally:
+                engine.dispose()
+
     def stage(self):
         """
         for each csv found under staging/, check if a corresponding table exists.
@@ -54,7 +78,7 @@ class Database:
         """
         files = os.listdir("staging")
         csvs = [f for f in files if f.endswith(".csv")]
-
+        self.wait_ready()
         try:
             psql = "postgresql://{}:{}@{}:{}/{}".format(
                 self.user, self.password, self.host, self.port, self.database
