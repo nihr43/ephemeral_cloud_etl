@@ -37,6 +37,14 @@ class Database:
                 self.password, self.host, self.port, self.user, self.database
             )
         )
+
+        print("\nSee pg_activity with:")
+        print(
+            "PGPASSWORD={} pg_activity -h {} -p {} -U {} -d {}".format(
+                self.password, self.host, self.port, self.user, self.database
+            )
+        )
+
         print("\nOr run dbt with:\ndbt build --project-dir etl --profiles-dir etl")
 
     def stage(self):
