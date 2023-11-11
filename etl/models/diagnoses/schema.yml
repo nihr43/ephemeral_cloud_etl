@@ -1,0 +1,10 @@
+
+version: 2
+
+models:
+  - name: observed_diagnoses
+    columns:
+      - name: dx_code 
+        tests:
+          - unique
+          - not_null

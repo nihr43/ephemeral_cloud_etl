@@ -1,0 +1,24 @@
+
+version: 2
+
+models:
+  - name: distinct_patients
+    columns:
+      - name: patid
+        tests:
+          - unique
+          - not_null
+
+  - name: male_patients
+    columns:
+      - name: patid
+        tests:
+          - unique
+          - not_null
+
+  - name: female_patients
+    columns:
+      - name: patid
+        tests:
+          - unique
+          - not_null

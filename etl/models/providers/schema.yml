@@ -1,0 +1,10 @@
+
+version: 2
+
+models:
+  - name: distinct_providers
+    columns:
+      - name: npi
+        tests:
+          - unique
+          - not_null
