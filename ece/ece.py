@@ -46,7 +46,7 @@ class Database:
             )
         )
 
-        print("\nOr run dbt with:\ndbt build --project-dir etl --profiles-dir etl")
+        print("\nRun dbt with:\ndbt build --project-dir etl --profiles-dir etl")
 
     def wait_ready(self):
         """
