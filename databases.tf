@@ -2,6 +2,6 @@
 module "dev" {
   name    = "dev"
   source  = "./modules/do-postgres"
-  tier    = "db-s-1vcpu-1gb"
-  size_mb = "20480"
+  tier    = "db-s-2vcpu-4gb"
+  size_mb = "61440"
 }
