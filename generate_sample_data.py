@@ -35,7 +35,14 @@ with open("resources/ICD-10-CSV/codes.csv", "r", newline="") as file:
     reader = csv.reader(file)
     for row in reader:
         if row:
-            dx_codes.append(row[0])
+            dx_codes.append(row[2])
+
+icd10 = []
+with open("resources/ICD-10-CSV/codes.csv", "r", newline="") as file:
+    reader = csv.reader(file)
+    for row in reader:
+        if row:
+            icd10.append((row[2], row[3]))
 
 npis = [row[0] for row in providers]
 
@@ -45,6 +52,7 @@ try:
     os.remove("staging/diagnoses.csv")
     os.remove("staging/patients.csv")
     os.remove("staging/providers.csv")
+    os.remove("staging/icd10.csv")
 except FileNotFoundError:
     pass
 
@@ -80,4 +88,10 @@ with open("staging/providers.csv", "w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(["npi", "lname", "fname"])
     for row in providers:
+        writer.writerow(row)
+
+with open("staging/icd10.csv", "w", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerow(["dx_code", "description"])
+    for row in icd10:
         writer.writerow(row)
