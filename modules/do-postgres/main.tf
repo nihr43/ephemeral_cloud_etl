@@ -1,4 +1,3 @@
-variable "name" {}
 variable "tier" {}
 variable "size_mb" {}
 
@@ -11,13 +10,12 @@ terraform {
   }
 }
 
-resource "digitalocean_database_db" "etl" {
-  cluster_id = digitalocean_database_cluster.etl.id
-  name       = "dbt"
+resource "random_id" "context" {
+  byte_length = 4
 }
 
 resource "digitalocean_database_cluster" "etl" {
-  name       = "etl-pgsql-${var.name}"
+  name       = "dbt-pgsql-${random_id.context.hex}"
   engine     = "pg"
   version    = 15
   size       = var.tier

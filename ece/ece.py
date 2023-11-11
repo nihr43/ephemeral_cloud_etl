@@ -4,7 +4,7 @@ import os
 import json
 from time import sleep
 from jinja2 import Environment, FileSystemLoader
-from sqlalchemy import create_engine, MetaData, exc
+from sqlalchemy import create_engine, MetaData
 
 
 def run_cmd(cmd):
@@ -18,16 +18,20 @@ class Database:
     creating a Database object does not create a database,
     rather database objects are created from tofu state dict.
     see tofu show --json | jq .values.root_module.child_modules[].resources[]
+    rnd_context is the module.db.random_id.context b64_url for ues when importing
+    the instance into production without having the id re-ggenerated
     """
 
-    def __init__(self, meta_dict):
+    def __init__(self, meta_dict, rnd_context):
         self.provider = "digitalocean"
+        self.id = meta_dict["id"]
         self.name = meta_dict["name"]
         self.host = meta_dict["host"]
         self.port = meta_dict["port"]
         self.user = meta_dict["user"]
         self.password = meta_dict["password"]
         self.database = meta_dict["database"]
+        self.context = rnd_context
 
         print("found database {}".format(self.name))
 
@@ -108,10 +112,28 @@ class Database:
     def dbt():
         run_cmd("dbt build --project-dir etl --profiles-dir etl")
 
+    def publish(self):
+        # import resources into production state:
+        run_cmd("tofu -chdir=prod destroy")
+        run_cmd(
+            "tofu -chdir=prod import module.db.random_id.context {}".format(
+                self.context
+            )
+        )
+        run_cmd(
+            "tofu -chdir=prod import module.db.digitalocean_database_cluster.etl {}".format(
+                self.id
+            )
+        )
+        run_cmd("tofu -chdir=prod apply")
+
+        # remove resources from dev state
+        run_cmd("tofu state rm module.db.random_id.context")
+        run_cmd("tofu state rm module.db.digitalocean_database_cluster.etl")
+
 
 def parse_databases():
-    # inspects tfstate, returns list of Databases
-    databases = []
+    # inspects tfstate, returns a Database
     tofushow = subprocess.run(
         ["tofu", "show", "-json"], check=True, capture_output=True
     )
@@ -119,12 +141,16 @@ def parse_databases():
     try:
         for j in state["values"]["root_module"]["child_modules"]:
             for i in j["resources"]:
-                if "digitalocean_database_cluster" in i["address"]:
-                    db = Database(i["values"])
-                    databases.append(db)
+                if i["address"] == "module.db.digitalocean_database_cluster.etl":
+                    db_meta = i["values"]
+                if i["address"] == "module.db.random_id.context":
+                    rnd_context = i["values"]["b64_url"]
+
+        db = Database(db_meta, rnd_context)
+
     except KeyError:
         print("no resources found")
-    return databases
+    return db
 
 
 def main():
@@ -134,6 +160,11 @@ def main():
     )
     parser.add_argument(
         "--hints", action="store_true", help="print copy-paste login and dbt commands"
+    )
+    parser.add_argument(
+        "--publish",
+        action="store_true",
+        help="transfer current working state to production",
     )
     args = parser.parse_args()
 
@@ -146,20 +177,21 @@ def main():
     else:
         run_cmd("tofu apply --auto-approve")
 
-    databases = parse_databases()
+    database = parse_databases()
+
+    if args.publish:
+        database.publish()
+        return
 
     if args.hints:
-        for i in databases:
-            i.get_login_hint()
+        database.get_login_hint()
         return
 
     env = Environment(loader=FileSystemLoader("templates"))
     template = env.get_template("profiles.yml.j2")
     with open("etl/profiles.yml", "w") as profile:
         profile.truncate()
-        profile.write(
-            template.render(database=databases[0])
-        )  # todo: handle more than one?
+        profile.write(template.render(database=database))
 
-    databases[0].stage()
-    databases[0].dbt()
+    database.stage()
+    database.dbt()
