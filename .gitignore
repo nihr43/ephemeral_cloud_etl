@@ -6,3 +6,4 @@ resources/providers.csv
 terraform.tfstate
 .terraform*
 etl/profiles.yml
+staging/*.csv

@@ -3,6 +3,7 @@ import subprocess
 import os
 import json
 from jinja2 import Environment, FileSystemLoader
+from sqlalchemy import create_engine, MetaData, Table
 
 
 def run_cmd(cmd):
@@ -38,6 +39,43 @@ class Database:
         )
         print("\nOr run dbt with:\ndbt build --project-dir etl --profiles-dir etl")
 
+    def stage(self):
+        """
+        for each csv found under staging/, check if a corresponding table exists.
+        if no table exists, execute the associated .sql.  (patients.csv is loaded by patients.sql)
+        """
+        files = os.listdir("staging")
+        csvs = [f for f in files if f.endswith(".csv")]
+
+        try:
+            psql = "postgresql://{}:{}@{}:{}/{}".format(
+                self.user, self.password, self.host, self.port, self.database
+            )
+            engine = create_engine(psql)
+            metadata = MetaData()
+            metadata.reflect(bind=engine)
+            for c in csvs:
+                table = c.removesuffix(".csv")
+                if not table in metadata.tables:
+                    print("{} does not exist.  creating...".format(table))
+                    run_cmd(
+                        "PGPASSWORD={} psql -h {} -p {} -U {} -d {} -f staging/{}.sql".format(
+                            self.password,
+                            self.host,
+                            self.port,
+                            self.user,
+                            self.database,
+                            table,
+                        )
+                    )
+        finally:
+            if engine:
+                engine.dispose()
+
+    @staticmethod
+    def dbt():
+        run_cmd("dbt build --project-dir etl --profiles-dir etl")
+
 
 def parse_databases():
     # inspects tfstate, returns list of Databases
@@ -63,7 +101,7 @@ def main():
         "--destroy", "--cleanup", action="store_true", help="delete all resources"
     )
     parser.add_argument(
-        "--login-hint", action="store_true", help="print copy-paste login command"
+        "--hints", action="store_true", help="print copy-paste login and dbt commands"
     )
     args = parser.parse_args()
 
@@ -78,9 +116,10 @@ def main():
 
     databases = parse_databases()
 
-    if args.login_hint:
+    if args.hints:
         for i in databases:
             i.get_login_hint()
+        return
 
     env = Environment(loader=FileSystemLoader("templates"))
     template = env.get_template("profiles.yml.j2")
@@ -89,3 +128,6 @@ def main():
         profile.write(
             template.render(database=databases[0])
         )  # todo: handle more than one?
+
+    databases[0].stage()
+    databases[0].dbt()

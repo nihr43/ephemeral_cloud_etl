@@ -42,16 +42,21 @@ npis = [row[0] for row in providers]
 patids = tuple(range(10000000))
 
 try:
-    os.remove("resources/diagnoses.csv")
-    os.remove("resources/patients.csv")
-    os.remove("resources/providers.csv")
+    os.remove("staging/diagnoses.csv")
+    os.remove("staging/patients.csv")
+    os.remove("staging/providers.csv")
 except FileNotFoundError:
+    pass
+
+try:
+    os.mkdir("staging")
+except FileExistsError:
     pass
 
 # create 10,000,000 patients (patids are unique but names are not)
 # assign each patient 10 random diagnoses from 10 random providers
 
-dx_output = "resources/diagnoses.csv"
+dx_output = "staging/diagnoses.csv"
 with open(dx_output, "w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(["patid", "dx_code", "provider"])
@@ -61,7 +66,7 @@ with open(dx_output, "w", newline="") as file:
             npi = random.choice(npis)
             writer.writerow([p, dx_code, npi])
 
-patients = "resources/patients.csv"
+patients = "staging/patients.csv"
 with open(patients, "w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(["patid", "fname", "lname", "sex"])
@@ -71,7 +76,7 @@ with open(patients, "w", newline="") as file:
         sex = random.choice(("M", "F"))
         writer.writerow([p, fname, lname, sex])
 
-with open("resources/providers.csv", "w", newline="") as file:
+with open("staging/providers.csv", "w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(["npi", "lname", "fname"])
     for row in providers:
