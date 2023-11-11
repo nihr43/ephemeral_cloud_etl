@@ -64,7 +64,7 @@ class Database:
             metadata.reflect(bind=engine)
             for c in csvs:
                 table = c.removesuffix(".csv")
-                if not table in metadata.tables:
+                if table not in metadata.tables:
                     print("{} does not exist.  creating...".format(table))
                     run_cmd(
                         "PGPASSWORD={} psql -h {} -p {} -U {} -d {} -f staging/{}.sql".format(
