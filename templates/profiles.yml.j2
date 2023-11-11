@@ -9,4 +9,6 @@ etl:
       threads: 10
       type: postgres
       user: {{database.user}}
+      retries: 3
+      keepalives_idle: 10
   target: dev
