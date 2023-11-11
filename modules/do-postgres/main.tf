@@ -1,5 +1,6 @@
 variable "name" {}
 variable "tier" {}
+variable "size_mb" {}
 
 terraform {
   required_providers {
@@ -22,4 +23,5 @@ resource "digitalocean_database_cluster" "etl" {
   size       = var.tier
   region     = "nyc1"
   node_count = 1
+  storage_size_mib = var.size_mb
 }
