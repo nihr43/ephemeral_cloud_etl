@@ -17,12 +17,13 @@ class Database:
     """
     creating a Database object does not create a database,
     rather database objects are created from tofu state dict.
-    see tofu show --json | jq .values.root_module.child_modules[].resources[]
+    see tofu show --json | jq .values.root_module.child_modules[].resources[] .
     rnd_context is the module.db.random_id.context b64_url for ues when importing
-    the instance into production without having the id re-ggenerated
+    the instance into production without having the id re-generated.
+    kubconfig is the client config the associated kubernetes cluster.
     """
 
-    def __init__(self, meta_dict, rnd_context):
+    def __init__(self, meta_dict, rnd_context, kubeconfig):
         self.provider = "digitalocean"
         self.id = meta_dict["id"]
         self.name = meta_dict["name"]
@@ -32,6 +33,7 @@ class Database:
         self.password = meta_dict["password"]
         self.database = meta_dict["database"]
         self.context = rnd_context
+        self.kubeconfig = kubeconfig
 
         print("found database {}".format(self.name))
 
@@ -51,6 +53,18 @@ class Database:
         )
 
         print("\nRun dbt with:\ndbt build --project-dir etl --profiles-dir etl")
+
+        self.dump_kubeconfig()
+        print(
+            "\nConnect to kubernetes with:\nkubectl --kubeconfig kubeconfig.yml get pods"
+        )
+        print(
+            "\nForward frontend with:\nkubectl --kubeconfig kubeconfig.yml port-forward deployment/pgweb 8081:8081"
+        )
+
+    def dump_kubeconfig(self):
+        with open("kubeconfig.yml", "w") as f:
+            f.write(self.kubeconfig)
 
     def wait_ready(self):
         """
@@ -145,8 +159,13 @@ def parse_databases():
                     db_meta = i["values"]
                 if i["address"] == "module.db.random_id.context":
                     rnd_context = i["values"]["b64_url"]
+                if (
+                    i["address"]
+                    == "module.db.digitalocean_kubernetes_cluster.data-apps"
+                ):
+                    kubeconfig = i["values"]["kube_config"][0]["raw_config"]
 
-        db = Database(db_meta, rnd_context)
+        db = Database(db_meta, rnd_context, kubeconfig)
 
     except KeyError:
         print("no resources found")
