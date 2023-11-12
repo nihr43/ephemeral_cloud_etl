@@ -23,7 +23,7 @@ class Database:
     kubconfig is the client config the associated kubernetes cluster.
     """
 
-    def __init__(self, meta_dict, rnd_context, kubeconfig):
+    def __init__(self, meta_dict, rnd_context, kubeconfig, k8s_id):
         self.provider = "digitalocean"
         self.id = meta_dict["id"]
         self.name = meta_dict["name"]
@@ -34,6 +34,8 @@ class Database:
         self.database = meta_dict["database"]
         self.context = rnd_context
         self.kubeconfig = kubeconfig
+        self.k8s_id = k8s_id
+        # todo: k8s should probably be its own class at this point
 
         print("found database {}".format(self.name))
 
@@ -129,21 +131,15 @@ class Database:
     def publish(self):
         # import resources into production state:
         run_cmd("tofu -chdir=prod destroy")
-        run_cmd(
-            "tofu -chdir=prod import module.db.random_id.context {}".format(
-                self.context
-            )
-        )
-        run_cmd(
-            "tofu -chdir=prod import module.db.digitalocean_database_cluster.etl {}".format(
-                self.id
-            )
-        )
+        run_cmd("tofu state pull > prod/publish.state")
+        run_cmd("cd prod && tofu state push publish.state")
         run_cmd("tofu -chdir=prod apply")
 
         # remove resources from dev state
         run_cmd("tofu state rm module.db.random_id.context")
         run_cmd("tofu state rm module.db.digitalocean_database_cluster.etl")
+        run_cmd("tofu state rm module.db.digitalocean_kubernetes_cluster.data-apps")
+        run_cmd("tofu state rm module.db.kubernetes_deployment.pgweb")
 
 
 def parse_databases():
@@ -164,8 +160,9 @@ def parse_databases():
                     == "module.db.digitalocean_kubernetes_cluster.data-apps"
                 ):
                     kubeconfig = i["values"]["kube_config"][0]["raw_config"]
+                    k8s_id = i["values"]["id"]
 
-        db = Database(db_meta, rnd_context, kubeconfig)
+        db = Database(db_meta, rnd_context, kubeconfig, k8s_id)
 
     except KeyError:
         print("no resources found")

@@ -7,4 +7,5 @@ terraform.tfstate
 .terraform*
 etl/profiles.yml
 staging/*.csv
-kubeconfig
+kubeconfig.yml
+prod/publish.state
