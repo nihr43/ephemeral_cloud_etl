@@ -1,2 +1,4 @@
 sqlalchemy
 jinja2
+psycopg2-binary
+dbt-postgres
