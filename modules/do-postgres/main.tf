@@ -27,7 +27,7 @@ resource "digitalocean_database_cluster" "etl" {
 resource "digitalocean_kubernetes_cluster" "data-apps" {
   name   = "ece-${random_id.context.hex}"
   region = "nyc1"
-  version = "1.28.2-do.0"
+  version = "1.29.0-do.0"
   node_pool {
     name       = "worker-pool"
     size       = "s-1vcpu-2gb"
